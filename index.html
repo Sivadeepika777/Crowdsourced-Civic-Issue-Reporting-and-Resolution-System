@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Civic Guardian</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================= AUTH SCREEN ============================= -->
+<div id="authScreen" class="screen active">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">🛡️</div>
+      <h1>AI Civic Guardian</h1>
+      <p>Report. Track. Resolve. Together.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="login">Sign In</button>
+      <button class="tab-btn" data-tab="register">Register</button>
+    </div>
+
+    <form id="loginForm" class="tab-pane active">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" required>
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" required>
+      <p class="error-text" id="loginError"></p>
+      <button type="submit" class="btn-primary">Sign In</button>
+    </form>
+
+    <form id="registerForm" class="tab-pane">
+      <label>Full Name</label>
+      <input type="text" id="registerName" placeholder="Jane Citizen" required>
+      <label>Email</label>
+      <input type="email" id="registerEmail" placeholder="you@example.com" required>
+      <label>Phone (optional)</label>
+      <input type="tel" id="registerPhone" placeholder="9876543210">
+      <label>Password</label>
+      <input type="password" id="registerPassword" placeholder="Minimum 6 characters" required minlength="6">
+      <p class="error-text" id="registerError"></p>
+      <button type="submit" class="btn-primary">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= MAIN APP ============================= -->
+<div id="appScreen" class="screen">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="brand-icon-sm">🛡️</span>
+      <span id="greeting">Hi, Citizen</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="points-pill">⭐ <span id="pointsDisplay">0</span> pts</span>
+      <button id="logoutBtn" class="icon-btn" title="Logout">⏻</button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ---------- HOME TAB ---------- -->
+    <section id="tab-home" class="tab-page active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">📄</div>
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Total Submitted</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="statResolved">0</div>
+          <div class="stat-label">Resolved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="statPending">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔄</div>
+          <div class="stat-value" id="statInProgress">0</div>
+          <div class="stat-label">In Progress</div>
+        </div>
+      </div>
+
+      <h2 class="section-title">Recent Complaints</h2>
+      <div id="recentList" class="complaint-list"></div>
+    </section>
+
+    <!-- ---------- REPORT TAB ---------- -->
+    <section id="tab-report" class="tab-page">
+      <h2 class="section-title">Report an Issue</h2>
+      <form id="reportForm">
+        <label>Title</label>
+        <input type="text" id="reportTitle" placeholder="e.g. Large pothole on Main Road" required minlength="3">
+
+        <label>Description</label>
+        <textarea id="reportDescription" rows="4" placeholder="Describe the issue in detail" required minlength="5"></textarea>
+
+        <label>Category</label>
+        <select id="reportCategory"></select>
+
+        <label>Severity</label>
+        <select id="reportSeverity">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+
+        <label>Location</label>
+        <div class="location-box">
+          <span id="locationText">Location not captured yet</span>
+          <button type="button" id="captureLocationBtn" class="btn-secondary">Capture GPS</button>
+        </div>
+
+        <label>Landmark (optional)</label>
+        <input type="text" id="reportLandmark" placeholder="e.g. Near City Hospital">
+
+        <label>Photos (up to 5)</label>
+        <div class="photo-row">
+          <div id="photoPreview" class="photo-preview"></div>
+          <label for="photoInput" class="photo-add-btn">＋</label>
+          <input type="file" id="photoInput" accept="image/*" multiple hidden>
+        </div>
+
+        <div class="switch-row">
+          <label class="switch">
+            <input type="checkbox" id="reportAnonymous">
+            <span class="slider"></span>
+          </label>
+          <span>Report Anonymously</span>
+        </div>
+
+        <div id="contactField">
+          <label>Contact Number (optional)</label>
+          <input type="tel" id="reportContact" placeholder="9876543210">
+        </div>
+
+        <p class="error-text" id="reportError"></p>
+        <button type="submit" class="btn-primary">Submit Complaint</button>
+      </form>
+    </section>
+
+    <!-- ---------- MAP TAB ---------- -->
+    <section id="tab-map" class="tab-page">
+      <div class="map-toolbar">
+        <h2 class="section-title" style="margin:0">Civic Issues Map</h2>
+        <select id="mapCategoryFilter">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div id="mapView"></div>
+    </section>
+
+    <!-- ---------- TRACKING TAB ---------- -->
+    <section id="tab-tracking" class="tab-page">
+      <div class="segmented" id="trackingSegment">
+        <button class="segment-btn active" data-value="mine">My Reports</button>
+        <button class="segment-btn" data-value="all">All Nearby</button>
+      </div>
+      <div id="trackingList" class="complaint-list"></div>
+    </section>
+
+    <!-- ---------- PROFILE TAB ---------- -->
+    <section id="tab-profile" class="tab-page">
+      <div class="profile-card">
+        <div class="profile-avatar" id="profileAvatar">?</div>
+        <h3 id="profileName"></h3>
+        <p id="profileEmail" class="muted"></p>
+      </div>
+      <div class="info-card">
+        <div class="info-row"><span>Civic Points</span><strong id="profilePoints">0</strong></div>
+        <div class="info-row"><span>Role</span><strong id="profileRole">citizen</strong></div>
+        <div class="info-row" id="profilePhoneRow"><span>Phone</span><strong id="profilePhone"></strong></div>
+      </div>
+      <div class="info-card">
+        <div class="info-row"><span>Language</span><strong>English</strong></div>
+        <div class="info-row"><span>Theme</span><strong id="themeLabel">Light</strong></div>
+      </div>
+      <button id="themeToggleBtn" class="btn-secondary" style="width:100%">🌓 Toggle Dark Mode</button>
+      <button id="logoutBtn2" class="btn-danger" style="width:100%; margin-top:10px;">Logout</button>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home"><span>🏠</span><small>Home</small></button>
+    <button class="nav-btn" data-tab="report"><span>📷</span><small>Report</small></button>
+    <button class="nav-btn" data-tab="map"><span>🗺️</span><small>Map</small></button>
+    <button class="nav-btn" data-tab="tracking"><span>📊</span><small>Tracking</small></button>
+    <button class="nav-btn" data-tab="profile"><span>👤</span><small>Profile</small></button>
+  </nav>
+</div>
+
+<!-- ============================= COMPLAINT DETAIL MODAL ============================= -->
+<div id="detailModal" class="modal-overlay">
+  <div class="modal-box">
+    <button id="closeDetailBtn" class="modal-close">✕</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
